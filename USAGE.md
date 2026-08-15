@@ -2,6 +2,32 @@
 
 本文档适用于 `deepseek-harness-client` 的 Windows 版本，包含客户端使用、源码运行、打包和常见问题排查。
 
+<p align="center">
+  <a href="./README.md">返回项目主页</a>
+  ·
+  <a href="https://github.com/luoboovo/deepseek-harness-client/releases">下载最新版本</a>
+  ·
+  <a href="#9-常见问题">直接查看常见问题</a>
+</p>
+
+> [!TIP]
+> 只想使用客户端：安装 Node.js LTS，从 Releases 下载 EXE，然后双击运行即可。第一次启动可能需要等待 npx 下载依赖。
+
+## 目录
+
+- [1. 客户端简介](#1-客户端简介)
+- [2. 系统要求](#2-系统要求)
+- [3. 普通用户使用方法](#3-普通用户使用方法)
+- [4. 窗口与托盘操作](#4-窗口与托盘操作)
+- [5. 查看运行日志](#5-查看运行日志)
+- [6. 从源码运行](#6-从源码运行)
+- [7. 打包 Windows 程序](#7-打包-windows-程序)
+- [8. 3080 端口排查](#8-3080-端口排查)
+- [9. 常见问题](#9-常见问题)
+- [10. 数据与安全说明](#10-数据与安全说明)
+- [11. 项目结构](#11-项目结构)
+- [12. 完整卸载](#12-完整卸载)
+
 ## 1. 客户端简介
 
 客户端会在后台执行以下命令：
@@ -22,6 +48,8 @@ DeepSeek Harness 启动后会监听本机 `http://127.0.0.1:3080`。客户端使
 - 从托盘退出时关闭本客户端启动的 Node.js/npx 进程树。
 - 未安装 Node.js 或 npx 时显示错误提示和下载入口。
 - 检测到 3080 端口已有服务时直接连接，不重复启动进程。
+
+![客户端主界面](./docs/images/client-main.png)
 
 ## 2. 系统要求
 
@@ -88,6 +116,8 @@ npx --version
 ## 5. 查看运行日志
 
 点击标题栏的 `☰` 按钮打开日志面板。正常启动时一般可以看到：
+
+![运行日志面板](./docs/images/client-logs.png)
 
 ```text
 $ npx @deepseek-ai/dsh web
@@ -200,6 +230,10 @@ taskkill /PID 12345 /T /F
 
 ## 9. 常见问题
 
+<p align="center">
+  <img src="./docs/images/mascot-troubleshooting.png" alt="角色正在排查客户端故障" width="680">
+</p>
+
 ### 提示缺少 Node.js 或 npx
 
 安装 Node.js LTS 后彻底退出客户端，再重新打开。如果已经安装，确认 `node --version` 和 `npx --version` 能在新打开的 PowerShell 中运行。
@@ -247,6 +281,8 @@ npx --yes @deepseek-ai/dsh web
 deepseek-harness-client/
 ├─ assets/
 │  └─ app.ico                 程序及托盘图标
+├─ docs/
+│  └─ images/                 界面截图与文档插图
 ├─ scripts/
 │  ├─ build-installer.ps1     安装版构建脚本
 │  └─ build-portable.ps1      免安装版构建脚本
