@@ -1,0 +1,50 @@
+{
+  "name": "deepseek-harness-electron-client",
+  "version": "1.0.0",
+  "description": "Modern Windows desktop wrapper for DeepSeek Harness.",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable",
+    "dist:installer": "electron-builder --win nsis",
+    "dist:all": "electron-builder --win portable nsis"
+  },
+  "build": {
+    "appId": "local.deepseek.harness.client",
+    "productName": "DeepSeek Harness",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "electronDist": "node_modules/electron/dist",
+    "win": {
+      "icon": "assets/app.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "DeepSeekHarnessModern-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DeepSeek Harness"
+    }
+  },
+  "devDependencies": {
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
+  }
+}

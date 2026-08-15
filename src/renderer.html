@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; frame-src http://127.0.0.1:3080;" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeepSeek Harness</title>
+    <link rel="stylesheet" href="./renderer.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="titlebar">
+        <div class="drag-region">
+          <div class="brand">
+            <img src="../assets/app.ico" alt="" />
+            <div>
+              <div class="brand-title">DeepSeek Harness</div>
+              <div class="brand-subtitle">Desktop Client</div>
+            </div>
+          </div>
+          <div class="status-pill" id="statusPill">
+            <span class="status-dot"></span>
+            <span id="statusTitle">正在准备</span>
+          </div>
+        </div>
+        <nav class="toolbar">
+          <button class="tool-button" id="restartButton" title="重启 DeepSeek Harness">
+            <span>↻</span>
+          </button>
+          <button class="tool-button" id="logButton" title="运行日志">
+            <span>☰</span>
+          </button>
+          <button class="window-button" id="minimizeButton" title="最小化">
+            <span>−</span>
+          </button>
+          <button class="window-button" id="maximizeButton" title="最大化">
+            <span>□</span>
+          </button>
+          <button class="window-button close" id="closeButton" title="最小化到托盘">
+            <span>×</span>
+          </button>
+        </nav>
+      </header>
+
+      <main class="workspace">
+        <section class="loading-view" id="loadingView">
+          <div class="loading-card">
+            <div class="loader-ring"></div>
+            <div>
+              <h1 id="loadingTitle">正在启动 DeepSeek Harness</h1>
+              <p id="loadingDetail">客户端正在后台运行 npx @deepseek-ai/dsh web。</p>
+            </div>
+            <div class="loading-actions">
+              <button id="retryButton">重启</button>
+              <button class="secondary" id="nodeButton">Node.js</button>
+            </div>
+          </div>
+        </section>
+
+        <webview
+          id="harnessView"
+          class="harness-view"
+          partition="persist:deepseek-harness"
+          allowpopups>
+        </webview>
+
+        <aside class="log-panel" id="logPanel" aria-hidden="true">
+          <div class="log-header">
+            <div>
+              <strong>运行日志</strong>
+              <span>npx @deepseek-ai/dsh web</span>
+            </div>
+            <div class="log-actions">
+              <button id="clearLogButton">清空</button>
+              <button class="log-close-button" id="closeLogButton" title="关闭日志窗口">×</button>
+            </div>
+          </div>
+          <pre id="logOutput"></pre>
+        </aside>
+      </main>
+    </div>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

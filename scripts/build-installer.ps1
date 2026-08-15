@@ -1,0 +1,23 @@
+$ErrorActionPreference = "Stop"
+
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
+Set-Location $ProjectRoot
+
+New-Item -ItemType Directory -Force -Path ".npm-cache", ".electron-cache", ".electron-builder-cache" | Out-Null
+
+$env:npm_config_cache = (Resolve-Path ".npm-cache").Path
+$env:electron_config_cache = (Resolve-Path ".electron-cache").Path
+$env:ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/"
+$env:ELECTRON_BUILDER_BINARIES_MIRROR = "https://npmmirror.com/mirrors/electron-builder-binaries/"
+$env:ELECTRON_BUILDER_CACHE = (Resolve-Path ".electron-builder-cache").Path
+$env:CSC_IDENTITY_AUTO_DISCOVERY = "false"
+
+if (-not (Test-Path ".\node_modules")) {
+    npm install
+}
+
+if (-not (Test-Path ".\node_modules\electron\dist\electron.exe")) {
+    node .\node_modules\electron\install.js
+}
+
+npm run dist:installer
