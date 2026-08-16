@@ -1,8 +1,10 @@
-const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, Menu, Tray, clipboard, dialog, ipcMain, shell } = require('electron');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const net = require('net');
 const path = require('path');
+const QRCode = require('qrcode');
+const { createLanBridge } = require('./lan-bridge');
 
 const APP_NAME = 'DeepSeek Harness';
 const HOST = '127.0.0.1';
@@ -10,6 +12,7 @@ const PORT = 3080;
 const HARNESS_URL = `http://${HOST}:${PORT}`;
 const NODE_DOWNLOAD_URL = 'https://nodejs.org/zh-cn/download';
 const COMMAND_LABEL = 'npx @deepseek-ai/dsh web';
+const LAN_PORT = Number(process.env.DSH_LAN_PORT) || 3081;
 
 let mainWindow = null;
 let tray = null;
@@ -18,6 +21,7 @@ let externalServer = false;
 let isQuitting = false;
 let startInProgress = false;
 let readyUrl = null;
+let lanBridge = null;
 let lastStatus = {
   tone: 'pending',
   title: '正在准备',
@@ -45,6 +49,17 @@ function send(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send(channel, payload);
   }
+}
+
+function initializeLanBridge() {
+  lanBridge = createLanBridge({
+    target: HARNESS_URL,
+    port: LAN_PORT,
+    settingsPath: path.join(app.getPath('userData'), 'lan-settings.json'),
+    onLog: pushLog,
+    onStateChange: (state) => send('lan-state', state)
+  });
+  if (lanBridge.isEnabled()) lanBridge.start();
 }
 
 function findExecutable(names) {
@@ -280,6 +295,7 @@ function createMainWindow() {
     send('harness-status', lastStatus);
     send('harness-log-history', logBuffer);
     sendReady();
+    send('lan-state', lanBridge?.getState() || null);
     startHarness();
   });
 
@@ -318,6 +334,7 @@ function showWindow() {
 
 async function quitApp() {
   isQuitting = true;
+  if (lanBridge?.isEnabled()) await lanBridge.shutdown();
   if (!externalServer) await stopHarness();
   if (tray) tray.destroy();
   app.quit();
@@ -338,8 +355,39 @@ function wireIpc() {
   ipcMain.handle('harness:get-state', () => ({
     status: lastStatus,
     logs: logBuffer,
-    ready: readyUrl ? { url: readyUrl } : null
+    ready: readyUrl ? { url: readyUrl } : null,
+    lan: lanBridge?.getState() || null
   }));
+  ipcMain.handle('lan:set-enabled', (_event, enabled) => (
+    enabled ? lanBridge?.start() : lanBridge?.stop()
+  ));
+  ipcMain.handle('lan:rotate-code', async () => {
+    if (!lanBridge) return null;
+    const result = await dialog.showMessageBox(mainWindow, {
+      type: 'question',
+      title: '更换配对码',
+      message: '确定要更换局域网配对码吗？',
+      detail: '已连接的手机会断开，需要使用新配对码重新连接。',
+      buttons: ['更换', '取消'],
+      defaultId: 1,
+      cancelId: 1
+    });
+    return result.response === 0 ? lanBridge.rotatePairingCode() : lanBridge.getState();
+  });
+  ipcMain.handle('lan:copy-text', (_event, text) => {
+    clipboard.writeText(String(text || ''));
+    return true;
+  });
+  ipcMain.handle('lan:create-qr', async (_event, pairUrl) => {
+    const allowedUrls = (lanBridge?.getState().addresses || []).map(({ pairUrl: value }) => value);
+    if (!allowedUrls.includes(pairUrl)) return null;
+    return QRCode.toDataURL(pairUrl, {
+      width: 256,
+      margin: 1,
+      errorCorrectionLevel: 'M',
+      color: { dark: '#172033', light: '#FFFFFF' }
+    });
+  });
 }
 
 function isLocalHarnessUrl(url) {
@@ -353,6 +401,10 @@ function isLocalHarnessUrl(url) {
 
 function secureWebviews() {
   app.on('web-contents-created', (_event, contents) => {
+    if (contents.getType() === 'webview' && typeof contents.setBackgroundThrottling === 'function') {
+      contents.setBackgroundThrottling(false);
+    }
+
     contents.setWindowOpenHandler(({ url }) => {
       if (isLocalHarnessUrl(url)) return { action: 'allow' };
       shell.openExternal(url);
@@ -368,15 +420,17 @@ function secureWebviews() {
   });
 }
 
-const gotLock = app.requestSingleInstanceLock();
+const allowMultipleInstances = process.env.DSH_ALLOW_MULTIPLE === '1';
+const gotLock = allowMultipleInstances || app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
 } else {
-  app.on('second-instance', showWindow);
+  if (!allowMultipleInstances) app.on('second-instance', showWindow);
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
     wireIpc();
     secureWebviews();
+    initializeLanBridge();
     createMainWindow();
     createTray();
   });

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f2f5f8" />
+    <title>连接 DeepSeek Harness</title>
+    <style>
+      :root { color-scheme: light; --bg: #f2f5f8; --panel: #fff; --line: #dce2e9; --text: #172033; --muted: #687386; --accent: #2563eb; font-family: system-ui, "Microsoft YaHei UI", sans-serif; }
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body { min-height: 100%; margin: 0; }
+      body { display: grid; align-items: center; padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom)); background: var(--bg); color: var(--text); }
+      main { width: min(100%, 420px); margin: 0 auto; }
+      .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+      .brand img { width: 48px; height: 48px; border-radius: 8px; }
+      h1 { margin: 0; font-size: 21px; }
+      .subtitle { margin-top: 3px; color: var(--muted); font-size: 12px; }
+      .panel { padding: 20px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: 0 18px 48px rgba(26, 39, 58, .12); }
+      .computer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-bottom: 17px; border-bottom: 1px solid var(--line); }
+      .computer span, .computer strong { display: block; }
+      .computer span { color: var(--muted); font-size: 12px; }
+      .computer strong { margin-top: 4px; font: 700 15px/1.2 ui-monospace, Consolas, monospace; }
+      .code { font: 800 18px/1 ui-monospace, Consolas, monospace; letter-spacing: 2px; }
+      .actions { display: grid; gap: 10px; margin-top: 18px; }
+      a { height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 750; }
+      .primary { background: var(--accent); color: #fff; }
+      .secondary { border: 1px solid var(--line); background: #f8fafc; color: #344158; }
+      .foot { margin-top: 14px; color: var(--muted); font-size: 11px; text-align: center; }
+      @media (max-height: 560px) { body { align-items: start; } .brand { margin-bottom: 14px; } .panel { padding: 16px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">
+        <img src="/app-icon.ico" alt="" />
+        <div><h1>DeepSeek Harness</h1><div class="subtitle">移动数据同步</div></div>
+      </div>
+      <section class="panel">
+        <div class="computer">
+          <div><span>电脑地址</span><strong>{{HOST}}</strong></div>
+          <div class="code">{{CODE}}</div>
+        </div>
+        <div class="actions">
+          <a class="primary" href="{{APP_LINK}}">打开 Android 应用</a>
+          <a class="secondary" href="{{BROWSER_LINK}}">浏览器打开移动端</a>
+        </div>
+        <div class="foot">同一局域网 · 数据同步 · 配对码保护</div>
+      </section>
+    </main>
+  </body>
+</html>
