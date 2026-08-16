@@ -1,0 +1,113 @@
+:root {
+  --dsh-mobile-height: 100dvh;
+  color-scheme: light;
+}
+
+html[data-dsh-mobile],
+html[data-dsh-mobile] body,
+html[data-dsh-mobile] #root {
+  width: 100%;
+  height: var(--dsh-mobile-height);
+  min-height: var(--dsh-mobile-height);
+  overflow: hidden;
+}
+
+html[data-dsh-mobile] body {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html[data-dsh-mobile] input,
+html[data-dsh-mobile] textarea,
+html[data-dsh-mobile] [contenteditable='true'] {
+  font-size: 16px !important;
+  letter-spacing: 0 !important;
+}
+
+html[data-dsh-mobile] button,
+html[data-dsh-mobile] [role='button'],
+html[data-dsh-mobile] a {
+  touch-action: manipulation;
+}
+
+@media (max-width: 700px) {
+  html[data-dsh-mobile] [class*='_sidebarCol']:has(button[aria-label='收起侧边栏']) {
+    position: absolute !important;
+    inset: 0 auto 0 0 !important;
+    z-index: 100 !important;
+    width: min(84vw, 320px) !important;
+    box-shadow: 18px 0 40px rgba(24, 36, 56, .18);
+  }
+
+  html[data-dsh-mobile] [class*='_centerCol'] [class$='_header'],
+  html[data-dsh-mobile] [class*='_centerCol'] [class*='_scrollBody'],
+  html[data-dsh-mobile] [class*='_centerCol'] [class*='_composerSeat'],
+  html[data-dsh-mobile] [class*='_centerCol'] [class*='_composerStack'] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  html[data-dsh-mobile] [class*='_centerCol'] [class*='_titleRow'] {
+    flex-wrap: wrap !important;
+    row-gap: 6px !important;
+  }
+
+  html[data-dsh-mobile] [class*='_centerCol'] [class*='_titleCluster'] {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  html[data-dsh-mobile] [class*='_centerCol'] [class*='_headerUtilities'] {
+    width: 100% !important;
+    max-width: 100% !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    scrollbar-width: none;
+  }
+
+  html[data-dsh-mobile] [class*='_composerSeat'] [class*='_tools'] {
+    width: auto !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+  }
+
+  html[data-dsh-mobile] [class*='_composerSeat'] [class*='_trailing'] {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    justify-content: flex-end !important;
+  }
+
+  html[data-dsh-mobile] [class*='_composerSeat'] button[aria-label^='选择模型'] {
+    width: min(72px, 20vw) !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  html[data-dsh-mobile] [class*='_composerSeat'] button[aria-label^='选择模型'] * {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  html[data-dsh-mobile] [role='dialog'] {
+    max-width: calc(100vw - 24px) !important;
+    max-height: calc(var(--dsh-mobile-height) - 24px) !important;
+  }
+
+  html[data-dsh-mobile] [data-radix-popper-content-wrapper] {
+    max-width: calc(100vw - 16px) !important;
+  }
+
+  html[data-dsh-mobile] pre,
+  html[data-dsh-mobile] code {
+    overflow-wrap: anywhere;
+  }
+}

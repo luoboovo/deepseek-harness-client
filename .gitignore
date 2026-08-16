@@ -3,6 +3,11 @@ release/
 .npm-cache/
 .electron-cache/
 .electron-builder-cache/
+.electron-builder-output/
+.electron-remote-qa/
+.android-build-tools/
+android-app/.gradle/
+android-app/local.properties
 
 *.log
 *.tmp

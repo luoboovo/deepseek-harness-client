@@ -27,6 +27,7 @@
 - [10. 数据与安全说明](#10-数据与安全说明)
 - [11. 项目结构](#11-项目结构)
 - [12. 完整卸载](#12-完整卸载)
+- [13. Android 手机数据同步](#13-android-手机数据同步)
 
 ## 1. 客户端简介
 
@@ -48,6 +49,8 @@ DeepSeek Harness 启动后会监听本机 `http://127.0.0.1:3080`。客户端使
 - 从托盘退出时关闭本客户端启动的 Node.js/npx 进程树。
 - 未安装 Node.js 或 npx 时显示错误提示和下载入口。
 - 检测到 3080 端口已有服务时直接连接，不重复启动进程。
+- 通过同一局域网让手机连接电脑上的 Harness API，同步会话、消息、任务与工作区数据。
+- 生成二维码配对链接，Android 应用内可直接扫码，也可通过手机浏览器打开移动界面。
 
 ![客户端主界面](./docs/images/client-main.png)
 
@@ -55,6 +58,7 @@ DeepSeek Harness 启动后会监听本机 `http://127.0.0.1:3080`。客户端使
 
 - Windows 10 或 Windows 11，64 位系统。
 - Node.js LTS，安装包需包含 npm 和 npx。
+- Android 客户端需要 Android 8.0（API 26）或更高版本。
 - 首次启动时需要连接网络，以便 npx 下载或更新 `@deepseek-ai/dsh`。
 - 本机 3080 端口可用，或该端口已经运行 DeepSeek Harness。
 
@@ -75,7 +79,7 @@ npx --version
 
 ### 3.1 免安装版
 
-1. 下载 `DeepSeekHarnessModern-1.0.0.exe`。
+1. 下载 `DeepSeekHarnessModern-Portable-1.3.1.exe`。
 2. 确认电脑已安装 Node.js LTS。
 3. 双击 EXE，等待状态栏显示“DeepSeek Harness 已启动”或“已就绪”。
 4. 首次运行时 npx 可能需要下载依赖，等待时间会比后续启动更长。
@@ -96,6 +100,7 @@ npx --version
 
 - `↻`：重启 DeepSeek Harness。
 - `☰`：打开或收起运行日志。
+- `▯`：打开或收起手机数据同步面板。
 - `−`：最小化窗口。
 - `□`：最大化或还原窗口。
 - `×`：隐藏到系统托盘，不会彻底退出程序。
@@ -168,7 +173,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build-portable.ps1
 输出文件：
 
 ```text
-release\DeepSeekHarnessModern-1.0.0.exe
+release\DeepSeekHarnessModern-Portable-1.3.1.exe
 ```
 
 ### 7.2 打包安装版
@@ -181,7 +186,27 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build-installer.ps1
 
 安装包使用 NSIS，支持选择安装目录，并创建桌面和开始菜单快捷方式。
 
-### 7.3 同时打包两种版本
+输出文件：
+
+```text
+release\DeepSeekHarnessModern-Setup-1.3.1.exe
+```
+
+### 7.3 打包 Android APK
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build-android.ps1
+```
+
+脚本优先使用 Android Studio 自带 JDK；找不到时下载便携 JDK 17。首次构建还会准备 Gradle 8.13，并在本机忽略目录中生成发布签名密钥。
+
+输出文件：
+
+```text
+release\DeepSeekHarnessMobile-1.3.1.apk
+```
+
+### 7.4 同时打包两种 Windows 版本
 
 ```powershell
 $env:ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/"
@@ -270,6 +295,9 @@ npx --yes @deepseek-ai/dsh web
 ## 10. 数据与安全说明
 
 - 客户端只把 Harness 主界面加载自 `127.0.0.1:3080`。
+- 开启手机数据同步后，桌面端会在 `0.0.0.0:3081` 提供带配对码的 Harness 局域网代理。
+- 手机访问的是 Harness 会话 API 和移动 Web 界面，不会接收电脑截图，也不能控制 Windows 桌面或其他应用。
+- 局域网通道使用 HTTP 与配对码 Cookie，不是端到端加密，只应在可信网络中使用；不用时请关闭开关。
 - 非本地链接会交给系统浏览器打开，不会在 Harness WebView 中继续跳转。
 - 客户端日志最多在内存中保留最近 300 条，不会由本项目主动上传。
 - Electron 页面启用了上下文隔离，渲染页面不能直接访问 Node.js API。
@@ -281,13 +309,19 @@ npx --yes @deepseek-ai/dsh web
 deepseek-harness-client/
 ├─ assets/
 │  └─ app.ico                 程序及托盘图标
+├─ android-app/               原生 Android WebView 客户端
 ├─ docs/
 │  └─ images/                 界面截图与文档插图
 ├─ scripts/
 │  ├─ build-installer.ps1     安装版构建脚本
+│  ├─ build-android.ps1       Android APK 构建与签名脚本
 │  └─ build-portable.ps1      免安装版构建脚本
 ├─ src/
+│  ├─ lan-bridge.js           配对认证、Harness API 与事件流代理
 │  ├─ main.js                 主进程、后台服务、托盘和窗口管理
+│  ├─ mobile-pair.html        扫码后的应用/浏览器配对页
+│  ├─ mobile-adapt.css        手机窄屏、抽屉与安全区适配
+│  ├─ mobile-adapt.js         软键盘与可视窗口高度适配
 │  ├─ preload.js              安全 IPC 接口
 │  ├─ renderer.html           客户端界面结构
 │  ├─ renderer.css            界面样式
@@ -312,3 +346,37 @@ deepseek-harness-client/
 3. 找到 `DeepSeek Harness` 并卸载。
 
 卸载桌面客户端不会自动卸载系统中的 Node.js。
+
+## 13. Android 手机数据同步
+
+### 13.1 电脑端准备
+
+1. 启动 Windows 客户端，等待 Harness 状态变为“已就绪”。
+2. 点击标题栏的 `▯` 按钮。
+3. 保持“允许手机连接”开关开启。
+4. 直接扫描面板二维码，或记录电脑地址和 8 位配对码。通常优先选择 `192.168.x.x` 地址。
+5. Windows 防火墙首次询问时，仅允许“专用网络”访问。
+
+### 13.2 手机端连接
+
+1. 安装 `DeepSeekHarnessMobile-1.3.1.apk`。
+2. 确认手机和电脑连接同一个路由器或局域网。
+3. 打开 Android 客户端，点击“扫描电脑二维码”，直接扫描桌面同步面板中的二维码。
+4. 也可以用系统相机扫描后打开 Android 应用，或手动输入电脑地址与配对码；电脑地址不需要填写 `http://` 或端口。
+
+连接后，手机会加载针对窄屏优化的 Harness 界面。展开左侧图标栏可选择电脑端已有工作区和会话；在手机中打开或提交同一会话后，消息与任务状态会通过同一个后端同步。手机和电脑可以各自选择不同会话、保持各自滚动位置与输入焦点。
+
+点击会话底部输入框会直接唤起手机系统输入法。页面会按软键盘实际高度缩放，输入栏不会依赖电脑端焦点。
+
+### 13.3 手机无法连接
+
+- 优先使用桌面面板中的 `192.168.x.x` 地址，不要使用虚拟网卡地址。
+- 确认电脑没有连接仅允许设备隔离的访客 Wi-Fi。
+- 执行 `netstat -ano | findstr :3081`，确认桌面端正在监听 3081 端口。
+- 在 Windows 防火墙中确认客户端获准访问专用网络。
+- 配对码更换后，所有旧连接都会失效，需要在手机上重新填写。
+- 应用内扫码依赖 Google Play 服务；扫码不可用时可手动填写，或使用系统相机打开配对链接。
+- 扫码页面能打开但 APK 没有响应时，确认已安装 1.3.1 或更高版本；也可选择“浏览器打开移动端”。
+- 如果会话数据不显示，或添加工作区时报 `crypto.randomUUID is not a function`，请将电脑端与 APK 同时升级到 1.3.1，再重新扫码连接。
+
+手机与电脑使用同一 Harness 数据源，但不是屏幕镜像。电脑客户端退出或 Harness 服务尚未就绪时，手机无法继续读取或提交会话数据。

@@ -30,6 +30,9 @@
           <button class="tool-button" id="logButton" title="运行日志">
             <span>☰</span>
           </button>
+          <button class="tool-button" id="syncButton" title="手机数据同步">
+            <span>▯</span>
+          </button>
           <button class="window-button" id="minimizeButton" title="最小化">
             <span>−</span>
           </button>
@@ -76,6 +79,63 @@
             </div>
           </div>
           <pre id="logOutput"></pre>
+        </aside>
+
+          <aside class="sync-panel" id="syncPanel" aria-hidden="true">
+          <div class="panel-header">
+            <div>
+              <strong>手机数据同步</strong>
+              <span id="syncHeaderStatus">正在检查网络</span>
+            </div>
+            <button class="panel-close-button" id="closeSyncButton" title="关闭手机数据同步面板">×</button>
+          </div>
+          <div class="sync-content">
+            <div class="sync-switch-row">
+              <div>
+                <strong>允许手机连接</strong>
+                <span>会话、消息和任务共用电脑端数据</span>
+              </div>
+              <label class="switch-control" title="开启或关闭局域网同步">
+                <input type="checkbox" id="lanEnabledToggle" />
+                <span class="switch-track"></span>
+              </label>
+            </div>
+
+            <section class="sync-section">
+              <div class="section-label">电脑地址</div>
+              <div class="address-list" id="lanAddressList"></div>
+            </section>
+
+            <section class="sync-section qr-section">
+              <div class="section-label">扫码配对</div>
+              <div class="qr-box" id="qrBox">
+                <img id="pairQr" alt="手机数据同步配对二维码" hidden />
+                <div class="qr-placeholder" id="qrPlaceholder">开启后生成二维码</div>
+              </div>
+              <div class="pair-link-row">
+                <code id="pairLink">尚未生成链接</code>
+                <button class="copy-command" id="copyPairLinkButton">复制</button>
+              </div>
+            </section>
+
+            <section class="sync-section">
+              <div class="section-heading">
+                <div class="section-label">配对码</div>
+                <button class="icon-command" id="rotateCodeButton" title="更换配对码">↻</button>
+              </div>
+              <div class="pairing-code-row">
+                <code id="pairingCode">--------</code>
+                <button class="copy-command" id="copyCodeButton">复制</button>
+              </div>
+            </section>
+
+            <div class="sync-meta">
+              <span>Android / 移动浏览器</span>
+              <span>端口 <strong id="lanPort">3081</strong></span>
+              <span id="lanClientCount">0 台手机</span>
+            </div>
+            <div class="sync-error" id="syncError" hidden></div>
+          </div>
         </aside>
       </main>
     </div>

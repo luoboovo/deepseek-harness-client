@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>连接 DeepSeek Harness</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #eef2f6;
+        --panel: #ffffff;
+        --line: #d9e0e8;
+        --text: #172033;
+        --muted: #687386;
+        --accent: #2563eb;
+        --success: #159a6c;
+        --danger: #c92a3d;
+      }
+
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body { min-height: 100%; margin: 0; }
+
+      body {
+        display: grid;
+        align-items: center;
+        padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, "Microsoft YaHei UI", sans-serif;
+      }
+
+      main { width: min(100%, 440px); margin: 0 auto; }
+      .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+      .brand img { width: 48px; height: 48px; border-radius: 8px; box-shadow: 0 8px 22px rgba(27, 42, 68, .15); }
+      h1 { margin: 0; font-size: 22px; line-height: 1.2; letter-spacing: 0; }
+      .subtitle { margin-top: 3px; color: var(--muted); font-size: 13px; }
+
+      .connection-panel {
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: 0 18px 48px rgba(26, 39, 58, .12);
+      }
+
+      .network-status { display: flex; align-items: center; gap: 9px; margin-bottom: 18px; color: #314056; font-size: 13px; }
+      .network-status::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 5px rgba(21, 154, 108, .12); }
+
+      button { width: 100%; height: 50px; border: 0; border-radius: 8px; font: 700 15px/1 system-ui, sans-serif; letter-spacing: 0; }
+      button:active { transform: translateY(1px); }
+      .scan-button { display: flex; align-items: center; justify-content: center; gap: 9px; background: var(--accent); color: #fff; }
+      .scan-icon { width: 18px; height: 18px; position: relative; display: inline-block; border: 2px solid currentColor; border-radius: 3px; }
+      .scan-icon::after { content: ''; position: absolute; inset: 4px; border: 2px solid currentColor; border-radius: 50%; }
+
+      .divider { display: flex; align-items: center; gap: 11px; margin: 20px 0 4px; color: var(--muted); font-size: 12px; }
+      .divider::before, .divider::after { content: ''; height: 1px; flex: 1; background: var(--line); }
+
+      label { display: block; margin-top: 16px; }
+      label span { display: block; margin-bottom: 7px; color: var(--muted); font-size: 12px; font-weight: 650; }
+      input { width: 100%; height: 48px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; outline: none; background: #fbfcfe; color: var(--text); font: 600 16px/1 system-ui, sans-serif; letter-spacing: 0; }
+      input:focus { border-color: rgba(37, 99, 235, .7); box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
+      #code { text-transform: uppercase; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: 2px; }
+      .connect-button { margin-top: 20px; border: 1px solid var(--line); background: #f7f9fc; color: #26344b; }
+
+      .error { margin: 0 0 18px; padding: 11px 12px; border: 1px solid rgba(201, 42, 61, .2); border-radius: 8px; background: #fff2f3; color: var(--danger); font-size: 13px; line-height: 1.5; }
+      .meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 14px; color: var(--muted); font-size: 11px; }
+
+      @media (max-height: 700px) {
+        body { align-items: start; }
+        .brand { margin-bottom: 14px; }
+        .connection-panel { padding: 18px; }
+        .network-status { margin-bottom: 14px; }
+        .divider { margin-top: 16px; }
+        label { margin-top: 12px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">
+        <img src="./app-icon.png" alt="" />
+        <div>
+          <h1>DeepSeek Harness</h1>
+          <div class="subtitle">移动数据同步</div>
+        </div>
+      </div>
+
+      <form class="connection-panel" id="connectionForm">
+        <div class="network-status">同一局域网</div>
+        <div class="error" id="errorMessage" hidden></div>
+
+        <button class="scan-button" id="scanButton" type="button"><span class="scan-icon"></span>扫描电脑二维码</button>
+        <div class="divider">或手动连接</div>
+
+        <label>
+          <span>电脑地址</span>
+          <input id="host" name="host" inputmode="decimal" autocomplete="off" placeholder="192.168.1.10" required />
+        </label>
+
+        <label>
+          <span>配对码</span>
+          <input id="code" name="code" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="8 位配对码" required />
+        </label>
+
+        <button class="connect-button" type="submit">连接电脑</button>
+        <div class="meta"><span>端口 3081</span><span>配对码保护</span></div>
+      </form>
+    </main>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const form = document.getElementById('connectionForm');
+      const hostInput = document.getElementById('host');
+      const codeInput = document.getElementById('code');
+      const errorMessage = document.getElementById('errorMessage');
+      const scanButton = document.getElementById('scanButton');
+
+      hostInput.value = params.get('host') || '';
+      codeInput.value = params.get('code') || '';
+      const error = params.get('error');
+      if (error) {
+        errorMessage.hidden = false;
+        errorMessage.textContent = error;
+      }
+
+      scanButton.addEventListener('click', () => {
+        errorMessage.hidden = true;
+        if (window.AndroidClient?.scanQr) {
+          window.AndroidClient.scanQr();
+          return;
+        }
+        errorMessage.hidden = false;
+        errorMessage.textContent = '当前设备不支持应用内扫码，请手动连接。';
+      });
+
+      codeInput.addEventListener('input', () => {
+        codeInput.value = codeInput.value.toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g, '').slice(0, 8);
+      });
+
+      hostInput.addEventListener('input', () => {
+        hostInput.value = hostInput.value.replace(/^https?:\/\//i, '').replace(/[:/].*$/, '').trim();
+      });
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const host = hostInput.value.trim();
+        const code = codeInput.value.trim().toUpperCase();
+        if (!host || code.length !== 8) {
+          errorMessage.hidden = false;
+          errorMessage.textContent = '请填写电脑地址和 8 位配对码。';
+          return;
+        }
+        window.location.href = `deepseekharness://connect?host=${encodeURIComponent(host)}&code=${encodeURIComponent(code)}`;
+      });
+    </script>
+  </body>
+</html>
