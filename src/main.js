@@ -1,10 +1,11 @@
-const { app, BrowserWindow, Menu, Tray, clipboard, dialog, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, Menu, Tray, clipboard, dialog, ipcMain, shell, session } = require('electron');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const net = require('net');
 const path = require('path');
 const QRCode = require('qrcode');
 const { createLanBridge } = require('./lan-bridge');
+const { createWhaleServer } = require('./whale-server');
 
 const APP_NAME = 'DeepSeek Harness';
 const HOST = '127.0.0.1';
@@ -13,6 +14,10 @@ const HARNESS_URL = `http://${HOST}:${PORT}`;
 const NODE_DOWNLOAD_URL = 'https://nodejs.org/zh-cn/download';
 const COMMAND_LABEL = 'npx @deepseek-ai/dsh web';
 const LAN_PORT = Number(process.env.DSH_LAN_PORT) || 3081;
+// 小鲸鱼挂件内置资源服务端口。挂件脚本/图片/音效打进安装包并由这个本机服务提供，
+// 因此即使 DSH web profile 没有安装 dsh-whale-widget 插件，桌面窗口里也能显示小鲸鱼。
+const WHALE_PORT = Number(process.env.DSH_WHALE_PORT) || 3089;
+const WHALE_ORIGIN = `http://${HOST}:${WHALE_PORT}`;
 
 let mainWindow = null;
 let tray = null;
@@ -22,6 +27,7 @@ let isQuitting = false;
 let startInProgress = false;
 let readyUrl = null;
 let lanBridge = null;
+let whaleServer = null;
 let lastStatus = {
   tone: 'pending',
   title: '正在准备',
@@ -60,6 +66,84 @@ function initializeLanBridge() {
     onStateChange: (state) => send('lan-state', state)
   });
   if (lanBridge.isEnabled()) lanBridge.start();
+}
+
+// ===== 小鲸鱼挂件内置支持 =====
+// 客户端把挂件的渲染资源（脚本/图片/音效）打进安装包（src/whale/），并通过本机
+// 3089 服务提供；webview 里发往 DSH 服务的挂件资源请求会被重定向到这里，因此即使
+// DSH web profile 没有安装 dsh-whale-widget 插件，桌面窗口右下角也能显示小鲸鱼。
+// 余额/用量/尺寸配置（balance.json、size.json）仍走 DSH 服务端路由，插件缺失时
+// 挂件会优雅降级显示提示，而鲸鱼本体与交互始终可用。
+
+function buildWhaleInjectScript() {
+  // 幂等注入：已由服务端注入或已加载则跳过。DSH 页面由服务端注入 <script defer>
+  // 时脚本会在 dom-ready 前执行并置位 window.__dshWhaleWidget；这里只是兜底。
+  // 服务刚启动的瞬间端口可能还没监听，加载失败后按 1.5s 间隔重试几次。
+  return `(function () {
+  if (window.__dshWhaleWidget) return 'already'
+  var tries = 0
+  function tryInject() {
+    var s = document.createElement('script')
+    s.src = '${WHALE_ORIGIN}/dsh-whale/widget.js'
+    s.defer = false
+    s.onload = function () { window.__dshWhaleWidget = true }
+    s.onerror = function () {
+      try { s.remove() } catch (err) {}
+      if (++tries < 5) setTimeout(tryInject, 1500)
+    }
+    (document.body || document.documentElement).appendChild(s)
+  }
+  tryInject()
+  return 'injecting'
+})()`
+}
+
+async function startWhaleServer() {
+  whaleServer = createWhaleServer({
+    port: WHALE_PORT,
+    assetsDir: assetPath('src', 'whale'),
+    onLog: pushLog
+  });
+  try {
+    await whaleServer.start();
+    pushLog(`小鲸鱼内置资源服务已启动：${WHALE_ORIGIN}\n`);
+  } catch (error) {
+    pushLog(`小鲸鱼内置资源服务启动失败（${error.message}），挂件渲染资源将回退到 DSH 服务端。\n`);
+    whaleServer = null;
+    return false;
+  }
+
+  // 一次性注册：把 webview 里发往 DSH 服务的挂件图片/音效请求重定向到内置资源。
+  // webview 使用 partition="persist:deepseek-harness"，这里按同一分区注册一次即可。
+  try {
+    const whaleSession = session.fromPartition('persist:deepseek-harness');
+    whaleSession.webRequest.onBeforeRequest(
+      {
+        urls: [
+          `${HARNESS_URL}/dsh-whale/image.png*`,
+          `${HARNESS_URL}/dsh-whale/sound/*`
+        ]
+      },
+      (details, callback) => {
+        callback({ redirectURL: details.url.replace(HARNESS_URL, WHALE_ORIGIN) });
+      }
+    );
+  } catch (error) {
+    pushLog(`小鲸鱼资源重定向注册失败：${error.message}\n`);
+  }
+  return true;
+}
+
+function ensureWhaleInjected(contents) {
+  if (!whaleServer) return;
+  contents.once('dom-ready', () => {
+    contents
+      .executeJavaScript(buildWhaleInjectScript(), true)
+      .then((result) => {
+        if (result === 'injected') pushLog('小鲸鱼挂件已由客户端内置注入。\n');
+      })
+      .catch(() => {});
+  });
 }
 
 function findExecutable(names) {
@@ -335,6 +419,7 @@ function showWindow() {
 async function quitApp() {
   isQuitting = true;
   if (lanBridge?.isEnabled()) await lanBridge.shutdown();
+  if (whaleServer) await whaleServer.shutdown();
   if (!externalServer) await stopHarness();
   if (tray) tray.destroy();
   app.quit();
@@ -401,8 +486,11 @@ function isLocalHarnessUrl(url) {
 
 function secureWebviews() {
   app.on('web-contents-created', (_event, contents) => {
-    if (contents.getType() === 'webview' && typeof contents.setBackgroundThrottling === 'function') {
-      contents.setBackgroundThrottling(false);
+    if (contents.getType() === 'webview') {
+      if (typeof contents.setBackgroundThrottling === 'function') {
+        contents.setBackgroundThrottling(false);
+      }
+      ensureWhaleInjected(contents);
     }
 
     contents.setWindowOpenHandler(({ url }) => {
@@ -431,6 +519,7 @@ if (!gotLock) {
     wireIpc();
     secureWebviews();
     initializeLanBridge();
+    startWhaleServer();
     createMainWindow();
     createTray();
   });

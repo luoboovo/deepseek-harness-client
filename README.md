@@ -39,6 +39,7 @@ DeepSeek Harness 会直接嵌入客户端窗口，无需跳转到系统浏览器
 ## 功能亮点
 
 - **窗口内直接使用**：通过 Electron `<webview>` 加载本机 `http://127.0.0.1:3080`。
+- **小鲸鱼余额挂件内置**：客户端自带 DeepSeek 余额小鲸鱼挂件的渲染资源（脚本/图片/音效），通过本机 3089 端口提供，并在页面加载后自动注入。即使 DSH web profile 没有安装 `dsh-whale-widget` 插件，桌面窗口右下角也能显示小鲸鱼；余额数据优先走 DSH 服务端插件路由，插件缺失时鲸鱼本体仍可用并提示「获取失败」。
 - **自动启动服务**：启动客户端后检查 Node.js、npx 与端口状态，并按需启动 Harness。
 - **进程妥善回收**：从托盘退出时，关闭由客户端创建的 npx/Node.js 进程树。
 - **托盘后台运行**：关闭主窗口时隐藏到系统托盘，避免误停正在执行的任务。
@@ -149,6 +150,8 @@ deepseek-harness-client/
 ├─ docs/images/   README、指南截图与角色插图
 ├─ scripts/       Windows 构建脚本
 ├─ src/           Electron 主进程、局域网数据代理、移动适配与桌面界面代码
+│  ├─ whale/          小鲸鱼挂件内置资源（widget.js、鲸鱼图、音效）
+│  └─ whale-server.js 小鲸鱼内置资源本机服务（默认 3089 端口，可用 DSH_WHALE_PORT 覆盖）
 ├─ package.json   项目与打包配置
 ├─ README.md      项目主页
 └─ USAGE.md       完整操作指南
